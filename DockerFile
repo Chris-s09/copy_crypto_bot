@@ -1,0 +1,8 @@
+From python:3.10
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install jupiter_python_sdk
+COPY . .
+EXPOSE 80
+CMD ["python", "bot.py"]
