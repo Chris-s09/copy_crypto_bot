@@ -1,6 +1,6 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import ContextTypes
-class Referral_screen_handeler:
+class Referral_screen_handler:
     @staticmethod
     async def command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         keyboard = [

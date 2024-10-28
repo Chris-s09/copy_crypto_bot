@@ -10,7 +10,7 @@ from src.helpers.common_instances import bot, db_manager, solanaClient
 from src.helpers.common_helpers import validate_public_key
 from solders.pubkey import Pubkey
 
-class My_Wallet_screen_handeler:
+class My_Wallet_screen_handler:
     # Method to mask the wallet address with stating 3 chars and last 3chars
     @staticmethod
     def mask_wallet_address(wallet_address:str):
@@ -39,7 +39,7 @@ class My_Wallet_screen_handeler:
             ],
             [
                 InlineKeyboardButton(
-                    f"Edit wallet - ({My_Wallet_screen_handeler.mask_wallet_address(str(wallet_address))}) 📝",
+                    f"Edit wallet - ({My_Wallet_screen_handler.mask_wallet_address(str(wallet_address))}) 📝",
                     callback_data="/edit_wallet",
                 )
             ],
@@ -96,7 +96,7 @@ class My_Wallet_screen_handeler:
                     [InlineKeyboardButton(
                             "Create new wallet 🆕", callback_data="/create_new_wallet")],
                     [InlineKeyboardButton(
-                            f"Edit wallet - ({My_Wallet_screen_handeler.mask_wallet_address(str(wallet_address))}) 📝",
+                            f"Edit wallet - ({My_Wallet_screen_handler.mask_wallet_address(str(wallet_address))}) 📝",
                             callback_data="/edit_wallet",)],
                     [InlineKeyboardButton("Back", callback_data="/back_to_home_screen")],]
                     reply_markup = InlineKeyboardMarkup(keyboard)

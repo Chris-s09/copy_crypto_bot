@@ -1,6 +1,7 @@
 # BOT_TOKEN = "7347500058:AAG6iBqMw6n1-XYZEh9NW6kAtj_dLAyCNak" production
-BOT_TOKEN = "7650950112:AAHqsiuXEGcfFn73lToCQn_ZqB9xL6bNewQ"  # @chris_local_bot local
-# BOT_TOKEN = "7858566449:AAFUlULH3NCffxDU1ZzQAyWrp501BYb9HJg" #@chris_crypto_bot staging
+# BOT_TOKEN = "7650950112:AAHqsiuXEGcfFn73lToCQn_ZqB9xL6bNewQ"  # @chris_local_bot local
+BOT_TOKEN = "7858566449:AAFUlULH3NCffxDU1ZzQAyWrp501BYb9HJg" #@chris_crypto_bot staging
+LOGGER_BOT_TOKEN = "7902766034:AAG0aTu1CminqYIts9NPTBwNtm1jdSkI428"
 import os
 from dotenv import load_dotenv
 

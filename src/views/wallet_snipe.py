@@ -13,27 +13,27 @@ DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 5
 
 
-class Wallet_Snipe_screen_handeler:
+class Wallet_Snipe_screen_handler:
     @staticmethod
     async def command_handler(
         update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         try:
-            keyboard = Wallet_Snipe_screen_handeler.get_wallet_snipe_screen_keyboard(
+            keyboard = Wallet_Snipe_screen_handler.get_wallet_snipe_screen_keyboard(
                 DEFAULT_PAGE
             )
             reply_markup = InlineKeyboardMarkup(keyboard)
-            data = await Wallet_Snipe_screen_handeler.load_wallet_snipes()
+            data = await Wallet_Snipe_screen_handler.load_wallet_snipes()
 
             wallet_snipes = (
-                await Wallet_Snipe_screen_handeler.get_pagination_wallets_snipes(
+                await Wallet_Snipe_screen_handler.get_pagination_wallets_snipes(
                     page=DEFAULT_PAGE,
                     page_size=DEFAULT_PAGE_SIZE,
                 )
             )
 
             wallet_snipes_msg_str = "\n\n".join(
-                Wallet_Snipe_screen_handeler.get_wallets_snipes_message_string(
+                Wallet_Snipe_screen_handler.get_wallets_snipes_message_string(
                     wallet_snipes
                 )
             )
@@ -45,7 +45,8 @@ class Wallet_Snipe_screen_handeler:
                 wallet_snipes_msg_str=wallet_snipes_msg_str
             )
 
-            await update.effective_message.edit_text(
+            await update._bot.send_message(
+                chat_id=update.effective_user.id,
                 text=message, reply_markup=reply_markup, parse_mode="HTML"
             )
         except Exception as e:
@@ -96,7 +97,7 @@ class Wallet_Snipe_screen_handeler:
                     ">>", callback_data="/wallet_snipe_next {}".format(page + 1)
                 ),
             ],
-            [InlineKeyboardButton("Back", callback_data="/back_to_home_screen")],
+            [InlineKeyboardButton("Back", callback_data="/start")],
         ]
         return keyboard
 
@@ -104,14 +105,14 @@ class Wallet_Snipe_screen_handeler:
         query = update.callback_query
         current_page = int(query.data.split()[-1])
 
-        keyboard = Wallet_Snipe_screen_handeler.get_wallet_snipe_screen_keyboard(
+        keyboard = Wallet_Snipe_screen_handler.get_wallet_snipe_screen_keyboard(
             current_page
         )
 
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         wallet_snipes = (
-            await Wallet_Snipe_screen_handeler.get_pagination_wallets_snipes(
+            await Wallet_Snipe_screen_handler.get_pagination_wallets_snipes(
                 page=current_page,
                 page_size=DEFAULT_PAGE_SIZE,
             )
@@ -120,7 +121,7 @@ class Wallet_Snipe_screen_handeler:
 
 
         wallet_snipes_msg_str = "\n\n".join(
-            Wallet_Snipe_screen_handeler.get_wallets_snipes_message_string(
+            Wallet_Snipe_screen_handler.get_wallets_snipes_message_string(
                 wallet_snipes
             )
         )
@@ -140,20 +141,20 @@ class Wallet_Snipe_screen_handeler:
         current_page = int(query.data.split()[-1])
 
         if current_page > 0:
-            keyboard = Wallet_Snipe_screen_handeler.get_wallet_snipe_screen_keyboard(
+            keyboard = Wallet_Snipe_screen_handler.get_wallet_snipe_screen_keyboard(
                 current_page
             )
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             wallet_snipes = (
-                await Wallet_Snipe_screen_handeler.get_pagination_wallets_snipes(
+                await Wallet_Snipe_screen_handler.get_pagination_wallets_snipes(
                     page=current_page,
                     page_size=DEFAULT_PAGE_SIZE,
                 )
             )
 
             wallet_snipes_msg_str = "\n\n".join(
-                Wallet_Snipe_screen_handeler.get_wallets_snipes_message_string(
+                Wallet_Snipe_screen_handler.get_wallets_snipes_message_string(
                     wallet_snipes
                 )
             )

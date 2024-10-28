@@ -7,7 +7,8 @@ from enum import Enum
 from src.db_connection.connectionpg import DatabaseManager
 from solana.rpc.api import Client
 from src.config.config import SOLANA_URL
-from src.helpers.common_instances import db_manager
+from src.helpers.common_instances import db_manager,bot_logger
+
 
 rpc_client = Client(SOLANA_URL)
 
@@ -202,6 +203,11 @@ class Wallet_Current_State(Wallet):
                                 "change_type": ChangeType.SELL,
                             }
                         )
+                        bot_logger.log(
+                            f"""if prev_balance > curr_balance:
+                    
+                        Token {curr_token} had a {ChangeType.SELL} change."""
+                        )
                     else:
                         changes.append(
                             {
@@ -209,6 +215,12 @@ class Wallet_Current_State(Wallet):
                                 "token": curr_token,
                                 "change_type": ChangeType.BUY,
                             }
+                        )
+                        bot_logger.log(
+                            f"""else
+                            if prev_balance < curr_balance:
+                    
+                        Token {curr_token} had a {ChangeType.BUY} change."""
                         )
                 else:
                     changes.append(
@@ -227,11 +239,23 @@ class Wallet_Current_State(Wallet):
                             "change_type": ChangeType.BUY,
                         }
                     )
+                    bot_logger.log(
+                        f"""else:
+                        if curr_balance is not None:   
+                        Token {curr_token} had a {ChangeType.BUY} change."""
+                    )
 
         for prev_token in prev_tokens_balance:
             if curr_tokens_balance.get(prev_token, None) == None:
                 changes.append({"token": prev_token, "change_type": ChangeType.SELL})
-
+                bot_logger.log(
+                    f"""
+                    for prev_token in prev_tokens_balance:
+            if curr_tokens_balance.get(prev_token, None) == None:
+            
+                    Token {prev_token} had a {ChangeType.SELL} change.
+                    curr_token={curr_tokens_balance}"""
+                )
         # for change in changes:
         #       print(f'Token {change["token"]} had a {change["change_type"]} change.')
 
