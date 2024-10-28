@@ -3,8 +3,9 @@ from telegram.ext import ContextTypes
 from src.helpers.common_instances import db_manager
 from src.helpers.common_instances import bot
 from src.config.config import SOLSCAN_WALLET_URL
+from src.helpers.constants import EDIT_WALLET_MESSAGE
 
-class Edit_Wallet_screen_handeler:
+class Edit_Wallet_screen_handler:
     @staticmethod
     async def command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
@@ -24,8 +25,9 @@ class Edit_Wallet_screen_handeler:
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await update.effective_message.edit_caption(
-                caption=" EDIT WALLET: Select an option",
-                reply_markup=reply_markup
+                caption=EDIT_WALLET_MESSAGE.format(wallet_address=wallet_address),
+                reply_markup=reply_markup,
+                parse_mode="HTML"
             )
         except AttributeError as e:
             print(f"AttributeError in command_handler: {e}")

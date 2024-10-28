@@ -5,7 +5,7 @@ from src.config.config import SOLSCAN_WALLET_URL, MOONPAY_DEPOSIT_URL
 from src.helpers.constants import DEPOSIT_MESSAGE
 
 
-class Deposit_screen_handeler:
+class Deposit_screen_handler:
     @staticmethod
     async def command_handler(
         update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -54,4 +54,4 @@ class Deposit_screen_handeler:
         except AttributeError as e:
             print(f"AttributeError in command_handler: {e}")
         except Exception as e:
-            print(f"An error occurred in Deposit_screen_handeler: {e}")
+            print(f"An error occurred in Deposit_screen_handler: {e}")

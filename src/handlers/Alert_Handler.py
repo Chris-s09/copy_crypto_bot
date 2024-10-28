@@ -5,7 +5,7 @@ import asyncio
 import random
 import string
 import time
-from src.helpers.common_instances import bot
+from src.helpers.common_instances import bot, db_manager
 async def sendMessage(text: str, tgId: int, reply_markup =None):
   """
   sends a message to a telegram user
@@ -29,7 +29,7 @@ def get_tg_ids_by_moniter_wallet(wallet: str) -> list:
     Returns a list of telegram ids of users who are monitoring a wallet.
     """
     try:
-        client = DatabaseManager()
+        client = db_manager
         res = client.get_tgid_by_moniter_wallet(wallet_address=wallet)
         if res is None:
             return []

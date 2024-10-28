@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import ContextTypes
 from src.helpers.common_instances import bot
-class Settings_screen_handeler:
+class Settings_screen_handler:
     @staticmethod
     async def command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         keyboard = [
@@ -24,7 +24,7 @@ class Settings_screen_handeler:
         keyboard = [
                 [InlineKeyboardButton("Edit buy amount 📝", callback_data="/edit_buy_amount")],
                 [InlineKeyboardButton("Edit slippage 📝", callback_data="/slippage")],
-                [InlineKeyboardButton("Consecutive Buy 📝", callback_data="/edit_slippage")],
+                [InlineKeyboardButton("Consecutive Buy 📝", callback_data="/consecutive_buy")],
                 [InlineKeyboardButton("Back", callback_data="/settings")]
             ]
         reply_markup = InlineKeyboardMarkup(keyboard)

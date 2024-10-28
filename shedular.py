@@ -12,6 +12,7 @@ from src.handlers.Alert_Handler import (
 from src.helpers.constants import ALERT_MESSAGE
 from src.handlers.Wallet import ChangeType
 import json
+from src.helpers.common_instances import db_manager
 
 all_wallets = []
 last_db_fetched_seconds = time.time()
@@ -20,7 +21,7 @@ last_db_fetched_seconds = time.time()
 async def update_wallets_to_monitor():
     global all_wallets
     global last_db_fetched_seconds
-    db_client = DatabaseManager()
+    db_client = db_manager
     all_wallets = db_client.get_all_monitored_wallets()
     last_db_fetched_seconds = time.time()
     return all_wallets
@@ -76,6 +77,7 @@ async def monitor_changes():
                             formatted_change_type = "SELL"
 
                         for tg_id in tg_ids:
+                            print(tg_id, "----------------")
                             alert_id = alert_manager.generate_random_id()
                             token = change.get("token", "unsupported")
                             if (

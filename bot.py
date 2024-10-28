@@ -8,13 +8,12 @@ from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
 )
-from src.views.deposit_screen import Deposit_screen_handeler
-from src.views.my_wallet_screen import My_Wallet_screen_handeler
-from src.views.positions_screen import Positions_screen_handeler
-from src.views.referral_screen import Referral_screen_handeler
-from src.views.settings_screen import Settings_screen_handeler
-from src.views.wallet_snipe import Wallet_Snipe_screen_handeler
-from src.views.edit_wallet_screen import Edit_Wallet_screen_handeler
+from src.views.deposit_screen import Deposit_screen_handler
+from src.views.my_wallet_screen import My_Wallet_screen_handler
+from src.views.referral_screen import Referral_screen_handler
+from src.views.settings_screen import Settings_screen_handler
+from src.views.wallet_snipe import Wallet_Snipe_screen_handler
+from src.views.edit_wallet_screen import Edit_Wallet_screen_handler
 from src.helpers.wallet_generator import create_wallet_address
 from telegram.helpers import escape_markdown
 from src.db_connection.connectionpg import DatabaseManager
@@ -25,13 +24,14 @@ from src.config.config import (
     ENVIRONMENT,
     SELL_PRECENTAGE,
     DEBUGGING,
+    SOLSCAN_WALLET_URL
 )
 from solana.rpc.api import Client
 from src.helpers.context import UserContext
 from solders.pubkey import Pubkey as PublicKey  # type: ignore
 from solders.signature import Signature  # type: ignore
 from base58 import b58decode
-from src.helpers.constants import COPY_TRADE_MESSAGE, ALERT_MESSAGE, WSOL, GREETING_MESSAGE
+from src.helpers.constants import COPY_TRADE_MESSAGE, ALERT_MESSAGE, WSOL, GREETING_MESSAGE, SUPPORT_MESSAGE, PRIVACY_POLICY, DISCLAIMER, COMMUNICATION_CHANNEL_LINK, TUTORIAL_LINK
 import asyncio
 from shedular import monitor_changes
 from src.handlers.Alert_Handler import sendMessage
@@ -49,12 +49,14 @@ user_context = UserContext()
 
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE, edit_message:bool = False) -> None:
     """Send a message when the command /start is issued."""
     user_id = update.effective_user.id
     user_first_name = update.effective_user.first_name
     wallet_address = db_manager.get_wallet_by_telegram_id(user_id)
     is_user_exist = db_manager.user_exists(user_id)
+
+
 
     if is_user_exist:
         keyboard = [
@@ -66,7 +68,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             ],
             [InlineKeyboardButton("Deposit 💵", callback_data=f"/deposit")],
             [
-                InlineKeyboardButton("Positions 📈", callback_data=f"/positions"),
+                InlineKeyboardButton("Positions 📈", url=SOLSCAN_WALLET_URL.format(wallet_address=wallet_address)),
                 InlineKeyboardButton("Copy Trading 🤖", callback_data=f"/copy_trade"),
             ],
             [
@@ -74,14 +76,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 InlineKeyboardButton("Settings ⚙️", callback_data=f"/settings"),
             ],
             [
-                InlineKeyboardButton("📢 Community Channel", url="www.google.com"),
-                InlineKeyboardButton("📚 Tutorials", url="www.google.com"),
+                InlineKeyboardButton("📢 Community Channel", url=COMMUNICATION_CHANNEL_LINK),
+                InlineKeyboardButton("📚 Tutorials", url=TUTORIAL_LINK),
             ],
             [InlineKeyboardButton("Refresh 🔄", callback_data=f"/refresh")],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         user_balance = 0
         retry_index = 0
+
+
+
         while retry_index < MAX_RETRIES:
             try:
                 user_balance = solanaClient.get_balance(
@@ -94,16 +99,39 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             finally:
                 retry_index = retry_index + 1
 
-        # print(user_balance,'000000000000',type(wallet_address))
-        # user_context.clear_user(user_id)
+        target_wallet = db_manager.get_target_wallets_by_tg(user_id)
 
-        await update._bot.send_message(
-            chat_id=user_id,
-            text=textwrap.dedent(
+        wallet_status_icon = "✅" if wallet_address else "⚠️"
+        balance_status_icon = "✅" if user_balance > 0 else "⚠️"
+        blockchain_status_icon = "✅" if target_wallet else "⚠️"
+
+        if edit_message:
+            return await update.effective_message.edit_caption(
+                caption=textwrap.dedent(
                 GREETING_MESSAGE.format(
                     user_first_name=user_first_name,
                     wallet_address=wallet_address,
                     user_balance=user_balance,
+                    wallet_status_icon=wallet_status_icon,
+                    balance_status_icon=balance_status_icon,
+                    blockchain_status_icon=blockchain_status_icon
+                )
+            ),
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            )
+
+        await update._bot.send_photo(
+            chat_id=user_id,
+            photo="https://png.pngtree.com/thumb_back/fh260/background/20230704/pngtree-3d-render-of-crypto-currency-and-nft-composition-image_3828737.jpg",
+            caption=textwrap.dedent(
+                GREETING_MESSAGE.format(
+                    user_first_name=user_first_name,
+                    wallet_address=wallet_address,
+                    user_balance=user_balance,
+                    wallet_status_icon=wallet_status_icon,
+                    balance_status_icon=balance_status_icon,
+                    blockchain_status_icon=blockchain_status_icon
                 )
             ),
             reply_markup=reply_markup,
@@ -185,9 +213,15 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if DEBUGGING:
         print(match_query, " ---------------------------------", user_id)
     match match_query:
+
+    #want to make match query cases in function here where i call these cases from the other file
+    
+    
+        case "/start":
+            await start(update, context)
         case "/agree":
             if not db_manager.user_exists(user_id):
-                await My_Wallet_screen_handeler.create_new_wallet_handler(user_id, update,first_attempt=True)
+                await My_Wallet_screen_handler.create_new_wallet_handler(user_id, update,first_attempt=True)
             else:
                 await update._bot.send_message(
                     chat_id=update.effective_user.id,
@@ -253,11 +287,13 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             escaped_tags_and_wallets = escape_markdown_v2(tags_and_wallets)
             full_message_content = escaped_message_content + escaped_tags_and_wallets
 
-            await update.effective_message.edit_text(
+            await update.effective_message._bot.send_message(
+                chat_id=update.effective_user.id,
                 text=f"{full_message_content}",
                 reply_markup=reply_markup,
                 parse_mode="MarkdownV2",
             )
+            
         case "/update_copy_wallet":
 
             user_trade_data = (
@@ -617,7 +653,14 @@ To manage your Copy Trade:
             if not user_context.get(user_id, "slippage_check"):
                 user_context.set(user_id, "slippage_check", True)
                 await update._bot.send_message(
-                    chat_id=user_id, text="Enter slippage % to use on copy trades"
+                    chat_id=user_id, text="""
+Enter your slippage below (in %)
+
+Send only the number, with no percentage % sign
+
+Example: 20
+
+0 would mean no slippage"""
                 )
             else:
                 await update._bot.send_message(
@@ -823,13 +866,10 @@ To manage your Copy Trade:
 
             data = user_context.get_all(user_id)
         case "/back_to_home_screen":
-            await start(update, context)
+            await start(update, context, True)
         case "/execute_swap":
-            # try:
             user_id = update.effective_user.id
             alert_id = match_query_data
-            # print(alert_id,'00000000000')
-
             alert_data = alert_manager.get(alert_id)
             if not alert_data:
                 await update.effective_message.reply_text("Something went wrong")
@@ -853,8 +893,6 @@ To manage your Copy Trade:
                     token_address=token,
                 )
             )
-
-            # print(token_balance_in_users_wallet_info,'token_balance_in_users_wallet_info--------------')
             token_balance_in_users_wallet = 0
             if token_balance_in_users_wallet_info:
                 token_balance_in_users_wallet = token_balance_in_users_wallet_info.get(
@@ -897,11 +935,6 @@ To manage your Copy Trade:
 
             if ENVIRONMENT == "dev" and False:
                 amount = 10000
-
-            # if amount < 10000:
-            #     await sendMessage(tgId=user_id,text='Not Enough SOL balance add atleast 0\.0001 Sol')
-            #     return
-
             swap_quote_data = {}
             try:
                 swap_quote_data = await get_swap_quote(
@@ -937,8 +970,6 @@ To manage your Copy Trade:
                 f" Token Address: {token}\n\n Token Name: {token_name}\n\n Token Symbol: {token_symbol}\n\n MC: ${round(token_mc, 2)}\n\n In amount: {in_ammount}\n\n Out amount: {out_ammount}\n\n Platform Fee: {round(swap_fee)}%",
                 reply_markup=reply_markup,
             )
-        # except Exception as e:
-        #     print("Error in /execute_swap:",e)
         case "/confirm_swaping":
             # try:
             user_id = update.effective_user.id
@@ -1100,62 +1131,52 @@ To manage your Copy Trade:
                     await update._bot.send_message(
                         chat_id=update.effective_chat.id, text=f"Trade Failed.{e}"
                     )
-        # except Exception as e:
-        #     print("Error in /confirm_swaping:",e)
         case "/wallet_snipe":
             try:
-                await Wallet_Snipe_screen_handeler.command_handler(update, context)
+                await Wallet_Snipe_screen_handler.command_handler(update, context)
             except Exception as e:
                 print("Error in /wallet_snipe:", e)
-
         case "/my_wallet":
             try:
-                await My_Wallet_screen_handeler.command_handler(update, context)
+                await My_Wallet_screen_handler.command_handler(update, context)
             except Exception as e:
                 print("Error in my_wallet:", e)
-
         case "/deposit":
             try:
-                await Deposit_screen_handeler.command_handler(update, context)
+                await Deposit_screen_handler.command_handler(update, context)
             except Exception as e:
                 print("Error in /deposit:", e)
-
-        case "/positions":
-            try:
-                await Positions_screen_handeler.command_handler(update, context)
-            except Exception as e:
-                print("Error in /positions:", e)
         case "/referral":
             try:
-                await Referral_screen_handeler.command_handler(update, context)
+                await Referral_screen_handler.command_handler(update, context)
             except Exception as e:
                 print("Error in /referral:", e)
         case "/settings":
             try:
-                await Settings_screen_handeler.command_handler(update, context)
+                await Settings_screen_handler.command_handler(update, context)
             except Exception as e:
                 print("Error in /settings:", e)
         case "/refresh":
-            await start(update, context)
+            await start(update, context, True)
         case "/wallet_snipe_prev":
             try:
-                await Wallet_Snipe_screen_handeler.handle_prev_command(update, context)
+                await Wallet_Snipe_screen_handler.handle_prev_command(update, context)
             except Exception as e:    
                 print("Error in /wallet_snipe_prev:", e)
         case "/wallet_snipe_next":
             try:
-                await Wallet_Snipe_screen_handeler.handle_next_command(update, context)
+                await Wallet_Snipe_screen_handler.handle_next_command(update, context)
             except Exception as e:
                 print("Error in /wallet_snipe_next:", e)
         case "/edit_wallet":
             try:
-                await Edit_Wallet_screen_handeler.command_handler(update, context)
+                await Edit_Wallet_screen_handler.command_handler(update, context)
             except Exception as e:
                 print("Error in /edit_wallet:", e)
         case "/create_new_wallet":
             try:
                 if not db_manager.user_exists(user_id):
-                    await My_Wallet_screen_handeler.create_new_wallet_handler(user_id, update)
+                    await My_Wallet_screen_handler.create_new_wallet_handler(user_id, update)
                 else:
                     await update._bot.send_message(
                     chat_id=update.effective_user.id,
@@ -1165,7 +1186,7 @@ To manage your Copy Trade:
                 print("Error in /create_new_wallet:", e)
         case "/delete_wallet":
             try:
-                await Edit_Wallet_screen_handeler.delete_wallet_handler(update, context)
+                await Edit_Wallet_screen_handler.delete_wallet_handler(update, context)
             except Exception as e:
                 print("Error in /delete_wallet:", e)
         case "/yes_delete_wallet":
@@ -1177,28 +1198,112 @@ To manage your Copy Trade:
             print(user_balance,"-----------------")
             try:
                 if user_balance > 0:
-                    await Edit_Wallet_screen_handeler.if_wallet_have_balance_handler(update, context)
+                    await Edit_Wallet_screen_handler.if_wallet_have_balance_handler(update, context)
                 else:
-                    await Edit_Wallet_screen_handeler.yes_delete_wallet_handler(update, context)
+                    await Edit_Wallet_screen_handler.yes_delete_wallet_handler(update, context)
             except Exception as e:
                 print("Error in /yes_delete_wallet:", e)
         case "/withdraw":
             try:
-                await Edit_Wallet_screen_handeler.withdraw_handler(update, context)
+                await Edit_Wallet_screen_handler.withdraw_handler(update, context)
             except Exception as e:
                 print("Error in /withdraw:", e)
         case "/buy_settings":
             try:
-                await Settings_screen_handeler.buy_settings(update, context)
+                await Settings_screen_handler.buy_settings(update, context)
             except Exception as e:
                 print("Error in /buy_settings:", e)
         case "/sell_settings":
             try:
-                await Settings_screen_handeler.sell_settings(update, context)
+                await Settings_screen_handler.sell_settings(update, context)
             except Exception as e:
                 print("Error in /sell_settings:", e)
-        case _:
-            await start(update, context)
+        case "/edit_buy_amount":
+            try:
+                if not user_context.get(user_id, "edit_buy_amount_check"):
+                    user_context.set(user_id, "edit_buy_amount_check", True)
+                
+                await update._bot.send_message(
+                    chat_id=user_id, text="""
+Enter the amount you want to BUY with for each COPY TRADING trade.
+
+Example: 0.5 would mean you are buying each copy trading transaction with 0.5 SOL
+
+Enter only the number, nothing else!"""
+                )
+                
+            except Exception as e:
+                print("Error in /edit_buy_amount:", e)
+        case "/consecutive_buy":
+            try:
+                await update._bot.send_message(
+                    chat_id=user_id, text="""Enter the number of consecutive buys allowed for a single token for COPY TRADING
+
+Some wallets buy the same token over and over, so this setting can protect against that."""
+                )
+                
+            except Exception as e:
+                print("Error in /edit_buy_amount:", e)
+        case "/sell_all":
+            try:
+                await update._bot.send_message(
+                    chat_id=user_id, text="""Sell type changed to ALL
+
+This sell type means that if the copy trader sells a token, you will sell ALL of your tokens.
+
+For example, if the copy trader sells 25% of their tokens, you will also sell, but you will sell ALL of your tokens, no matter how many the trader sells!"""
+                )
+                
+            except Exception as e:
+                print("Error in /sell_all:", e)
+        case "/sell_percentage":
+            try:
+                await update._bot.send_message(
+                    chat_id=user_id, text="""Sell type changed to PERCENTAGE
+
+This sell type means that if the copy trader sells a certain amount of a token, you will copy that exact amount.
+
+For example, if the copy trader sells 50% of their tokens, you will also copy that and sell 50% of your tokens."""
+                )
+                
+            except Exception as e:
+                print("Error in /percentage:", e)
+        case "/edit_stop_loss":
+            try:
+                await update._bot.send_message(
+                 chat_id= user_id, text="""📨 Send stop loss below"""   
+                )
+                
+            except Exception as e:
+                print("Error in /edit_stop_loss:", e)
+        case "/edit_take_profit":
+            try:
+                await update._bot.send_message(
+                 chat_id= user_id, text="""📨 Send take profit below"""   
+                )
+                
+            except Exception as e:
+                print("Error in /edit_take_profit:", e)
+        case "/my_tokens":
+            try:
+                await Positions_screen_handler.my_tokens_handler(update, context)
+            except Exception as e:
+                print("Error in /my_tokens:", e)
+        case "/my_trades":
+            try:
+                await Positions_screen_handler.my_trades_handler(update, context)
+            except Exception as e:
+                print("Error in /my_trades:", e)
+        case "/trade_history":
+            try:
+                await Positions_screen_handler.trade_history_handler(update, context)
+            except Exception as e:
+                print("Error in /trade_history:", e)
+        case "/buy_my_tokens":
+            try:
+                await Positions_screen_handler.buy_my_tokens_handler(update, context)
+            except Exception as e:
+                print("Error in /buy_my_tokens:", e)
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -1247,6 +1352,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if user_context.get(user_id, "sell_gas")
                     else ""
                 )
+
                 keyboard = [
                     [InlineKeyboardButton(f"Tag: {tag_text}", callback_data="/tag")],
                     [
@@ -1804,6 +1910,16 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=f'Slippage must be entered as a number, e.g. "5" is 5%.',
                 reply_markup=reply_markup,
             )
+    elif edit_buy_amount_check := user_context.get(user_id, "edit_buy_amount_check"):
+        text = update.message.text
+        buy_amount, is_valid_buy_amount = process_buy_and_sell(text)
+        if is_valid_buy_amount:
+            user_context.set(user_id, "edit_buy_amount", buy_amount)
+            user_context.clear(user_id, "edit_buy_amount_check")
+            await update._bot.send_message(
+                chat_id=update.effective_user.id, text=f"Click /start "
+            )     
+                
     else:
         if validate_public_key(text):
             account_info = solanaClient.get_balance(PublicKey(b58decode(text)))
@@ -1846,6 +1962,30 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     else:
         await update._bot.send_message(chat_id=user_id, text=context_data)
 
+# i want to make support command here
+async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    await update._bot.send_message(
+        chat_id=user_id,
+        text=SUPPORT_MESSAGE,
+        parse_mode="HTML",
+    )
+
+async def privacy_policy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    await update._bot.send_message(
+        chat_id=user_id,
+        text=PRIVACY_POLICY,
+        parse_mode="HTML",
+    )
+async def disclaimer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    await update._bot.send_message(
+        chat_id=user_id,
+        text=DISCLAIMER,
+        parse_mode="HTML",
+    )
+
 
 async def command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     command_text = update.message.text
@@ -1857,15 +1997,37 @@ async def command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await start(update, context)
         case "/help":
             await help_command(update, context)
+        case '/support':
+            try:
+                await support_command(update, context)
+            except Exception as e:
+                print("Error in /support:", e)
+        case '/home':
+            try:
+                await start(update, context)
+            except Exception as e:
+                print("Error in /home:", e)
+        case '/privacy':
+            try:
+                await privacy_policy(update, context)
+            except Exception as e:
+                print("Error in /privacy:", e)
+        case '/disclaimer':
+            try:
+                await disclaimer(update, context)
+            except Exception as e:
+                print("Error in /disclaimer:", e)
+                
+
 
 
 def main() -> None:
     """Start the bot."""
     application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler(["start", "help"], callback=command_handler))
+    application.add_handler(CommandHandler(["start", "help", "support","home","privacy","disclaimer"], callback=command_handler))
     application.add_handler(CallbackQueryHandler(callback_handler))
     application.add_handler(MessageHandler(filters.TEXT, message_handler))
-    # asyncio.get_event_loop().create_task(monitor_changes())
+    asyncio.get_event_loop().create_task(monitor_changes())
     asyncio.get_event_loop().create_task(
         application.run_polling(allowed_updates=Update.ALL_TYPES)
     )

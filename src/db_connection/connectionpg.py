@@ -655,16 +655,16 @@ class DatabaseManager:
     def delete_wallet_by_telegram_id(self, telegram_id: int, wallet_id: int) -> None:
 
         with self.conn.cursor() as cursor:
+            cursor.execute("DELETE FROM monitor_wallets WHERE telegram_id = %s", (telegram_id,))
             cursor.execute("DELETE FROM users WHERE telegram_id = %s", (telegram_id,))
-            cursor.execute(
-                "DELETE FROM monitor_wallets WHERE telegram_id = %s", (telegram_id,)
-            )
             cursor.execute("DELETE FROM wallet WHERE wallet_id = %s", (wallet_id,))
         self.conn.commit()
 
     def deleted_wallet_having_balance(self, telegram_id: int) -> None:
         with self.conn.cursor() as cursor:
+            cursor.execute("DELETE FROM monitor_wallets WHERE telegram_id = %s", (telegram_id,))
             cursor.execute("DELETE FROM users WHERE telegram_id = %s", (telegram_id,))
+            
 
     def update_buy_gas(self, telegram_id, buy_gas, id):
         self.check_connection()
